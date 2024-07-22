@@ -20,19 +20,51 @@ class MainWindow(QtWidgets.QMainWindow):
                              self.ui.lineEdit_m, self.ui.lineEdit_a0,
                              self.ui.lineEdit_dt1, self.ui.lineEdit_dt2]
 
+        for field in self.input_fields:
+            field.textEdited.connect(lambda _, f=field: self.reset_style(f))
+
         self.ui.pushButton_graph.clicked.connect(self.print_graph)
         self.ui.pushButton_reset.clicked.connect(self.reset)
 
     def print_graph(self, event=None):
-        pass
+        if self.check():
+            self.reset_colour()
+
+    def check(self):
+        flag = False
+        styleSheet = "color: red"
+        for line in self.input_fields:
+            line_text = line.text()
+            if line_text == "":
+                line.setText("null")
+                line.setStyleSheet(styleSheet)
+                flag = True
+            else:
+                try:
+                    if int(line_text) < 0:
+                        line.setStyleSheet(styleSheet)
+                        flag = True
+                except ValueError:
+                    line.setStyleSheet(styleSheet)
+                    flag = True
+        return not flag
 
     def reset(self, event=None):
-        styleSheet = f'color: black'
+        self.reset_text()
+        self.reset_colour()
+
+    def reset_text(self):
         for line in self.input_fields:
             line.setText("")
+
+    def reset_colour(self):
+        styleSheet = "color: black"
+        for line in self.input_fields:
             line.setStyleSheet(styleSheet)
 
-
+    def reset_style(self, line):
+        styleSheet = "color: black"
+        line.setStyleSheet(styleSheet)
 
 
 if __name__ == "__main__":
