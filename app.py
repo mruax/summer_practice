@@ -64,7 +64,6 @@ class MainWindow(QtWidgets.QMainWindow):
         dt2 = float(self.input_fields[10].text())    # Параметр дискретизации
 
         t_max = t1 - t0
-
         M = dt1/dt2
 
         # Массив времени
