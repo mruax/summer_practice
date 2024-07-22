@@ -241,24 +241,24 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_input_fields.addLayout(self.verticalLayout_dt1)
 
-        self.verticalLayout_dt1_2 = QVBoxLayout()
-        self.verticalLayout_dt1_2.setSpacing(0)
-        self.verticalLayout_dt1_2.setObjectName(u"verticalLayout_dt1_2")
-        self.label_dt1_2 = QLabel(self.centralwidget)
-        self.label_dt1_2.setObjectName(u"label_dt1_2")
-        sizePolicy.setHeightForWidth(self.label_dt1_2.sizePolicy().hasHeightForWidth())
-        self.label_dt1_2.setSizePolicy(sizePolicy)
-        self.label_dt1_2.setFont(font1)
+        self.verticalLayout_dt2 = QVBoxLayout()
+        self.verticalLayout_dt2.setSpacing(0)
+        self.verticalLayout_dt2.setObjectName(u"verticalLayout_dt2")
+        self.label_dt2 = QLabel(self.centralwidget)
+        self.label_dt2.setObjectName(u"label_dt2")
+        sizePolicy.setHeightForWidth(self.label_dt2.sizePolicy().hasHeightForWidth())
+        self.label_dt2.setSizePolicy(sizePolicy)
+        self.label_dt2.setFont(font1)
 
-        self.verticalLayout_dt1_2.addWidget(self.label_dt1_2)
+        self.verticalLayout_dt2.addWidget(self.label_dt2)
 
-        self.lineEdit_dt1_2 = QLineEdit(self.centralwidget)
-        self.lineEdit_dt1_2.setObjectName(u"lineEdit_dt1_2")
+        self.lineEdit_dt2 = QLineEdit(self.centralwidget)
+        self.lineEdit_dt2.setObjectName(u"lineEdit_dt2")
 
-        self.verticalLayout_dt1_2.addWidget(self.lineEdit_dt1_2)
+        self.verticalLayout_dt2.addWidget(self.lineEdit_dt2)
 
 
-        self.verticalLayout_input_fields.addLayout(self.verticalLayout_dt1_2)
+        self.verticalLayout_input_fields.addLayout(self.verticalLayout_dt2)
 
 
         self.gridLayout.addLayout(self.verticalLayout_input_fields, 1, 0, 1, 1)
@@ -280,28 +280,28 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_buttons.addItem(self.horizontalSpacer_2)
 
-        self.pushButton_2 = QPushButton(self.centralwidget)
-        self.pushButton_2.setObjectName(u"pushButton_2")
+        self.pushButton_reset = QPushButton(self.centralwidget)
+        self.pushButton_reset.setObjectName(u"pushButton_reset")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.pushButton_2.sizePolicy().hasHeightForWidth())
-        self.pushButton_2.setSizePolicy(sizePolicy1)
+        sizePolicy1.setHeightForWidth(self.pushButton_reset.sizePolicy().hasHeightForWidth())
+        self.pushButton_reset.setSizePolicy(sizePolicy1)
         font2 = QFont()
         font2.setFamilies([u"Comic Sans MS"])
         font2.setPointSize(12)
         font2.setBold(False)
-        self.pushButton_2.setFont(font2)
+        self.pushButton_reset.setFont(font2)
 
-        self.horizontalLayout_buttons.addWidget(self.pushButton_2)
+        self.horizontalLayout_buttons.addWidget(self.pushButton_reset)
 
-        self.pushButton = QPushButton(self.centralwidget)
-        self.pushButton.setObjectName(u"pushButton")
-        sizePolicy1.setHeightForWidth(self.pushButton.sizePolicy().hasHeightForWidth())
-        self.pushButton.setSizePolicy(sizePolicy1)
-        self.pushButton.setFont(font2)
+        self.pushButton_graph = QPushButton(self.centralwidget)
+        self.pushButton_graph.setObjectName(u"pushButton_graph")
+        sizePolicy1.setHeightForWidth(self.pushButton_graph.sizePolicy().hasHeightForWidth())
+        self.pushButton_graph.setSizePolicy(sizePolicy1)
+        self.pushButton_graph.setFont(font2)
 
-        self.horizontalLayout_buttons.addWidget(self.pushButton)
+        self.horizontalLayout_buttons.addWidget(self.pushButton_graph)
 
 
         self.gridLayout.addLayout(self.horizontalLayout_buttons, 2, 1, 1, 1)
@@ -340,9 +340,9 @@ class Ui_MainWindow(object):
         self.label_m.setText(QCoreApplication.translate("MainWindow", u"\u041c\u0430\u0441\u0441\u0430 \u0433\u0440\u0443\u0437\u0430 m:", None))
         self.label_a0.setText(QCoreApplication.translate("MainWindow", u"\u041a\u043e\u043d\u0441\u0442\u0430\u043d\u0442\u0430 A0:", None))
         self.label_dt1.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0435\u0440\u0438\u043e\u0434 \u0440\u0430\u0441\u0447\u0435\u0442\u043e\u0432 dt1:", None))
-        self.label_dt1_2.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 \u0434\u0438\u0441\u043a\u0440\u0435\u0442\u0438\u0437\u0430\u0446\u0438\u0438 dt2:", None))
+        self.label_dt2.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440 \u0434\u0438\u0441\u043a\u0440\u0435\u0442\u0438\u0437\u0430\u0446\u0438\u0438 dt2:", None))
         self.label_graph.setText("")
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"\u0421\u0411\u0420\u041e\u0421", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0421\u041e\u0421\u0422\u0410\u0412\u0418\u0422\u042c \u0413\u0420\u0410\u0424\u0418\u041a", None))
+        self.pushButton_reset.setText(QCoreApplication.translate("MainWindow", u"\u0421\u0411\u0420\u041e\u0421", None))
+        self.pushButton_graph.setText(QCoreApplication.translate("MainWindow", u"\u0421\u041e\u0421\u0422\u0410\u0412\u0418\u0422\u042c \u0413\u0420\u0410\u0424\u0418\u041a", None))
     # retranslateUi
 
