@@ -1,21 +1,26 @@
-import random
+import os
 import sys
-
-from PySide6 import QtCore, QtGui, QtWidgets
+from io import BytesIO
 from pathlib import Path
 
-from ui import Ui_MainWindow
-
+import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import matplotlib.pyplot as plt
+from PySide6 import QtGui, QtWidgets
 from PySide6.QtGui import QPixmap, Qt
-from io import BytesIO
+import pandas as pd
+
+from ui import Ui_MainWindow
+import openpyxl
 
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.x = []
+        self.v = []
+        self.t = []
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -31,15 +36,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.pushButton_graph.clicked.connect(self.print_graph)
         self.ui.pushButton_reset.clicked.connect(self.reset)
+        self.ui.pushButton_print.clicked.connect(self.excel_graph)
 
     def print_graph(self, event=None):
-        if not self.check():
-            # TODO: check if t_min >= t_max or t_max > t_min + dt
-
+        if self.check():
             self.reset_colour()
 
-            buf = self.create_plot()
-            pixmap = self.plot_to_label(buf, width=800, height=600)
+            self.create_plot()
+            pixmap = self.plot_to_label(width=800, height=600)
             self.ui.label_graph.setPixmap(pixmap)
 
     def create_plot(self):
@@ -64,10 +68,10 @@ class MainWindow(QtWidgets.QMainWindow):
         dt2 = float(self.input_fields[10].text())    # Параметр дискретизации
 
         t_max = t1 - t0
-        M = dt1/dt2
+        M = dt1 / dt2
 
         # Массив времени
-        t = np.arange(t0, t1, dt2)
+        t = np.arange(t0, t1 + dt2, dt2)
 
         # Инициализация массивов для скорости и положения
         v = np.zeros_like(t)
@@ -82,6 +86,10 @@ class MainWindow(QtWidgets.QMainWindow):
             v[i] = v[i - 1] + (-omega0 ** 2 * x[i - 1] - gamma * v[i - 1] + A0 * np.cos(OMEGA * t[i]) / m) * dt2
             x[i] = x[i - 1] + v[i] * dt2
 
+        self.x = x
+        self.v = v
+        self.t = t
+
         # Построение графика результатов
         sns.set(style="whitegrid")
         plt.figure(figsize=(14, 7))
@@ -94,35 +102,88 @@ class MainWindow(QtWidgets.QMainWindow):
         plt.ylabel('Положение $x(t)$ и Скорость $v(t)$')
         plt.legend()
 
-        # Сохранение графика в буфер
-        buf = BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        return buf
+        # Сохранение графика в файл
+        plt.savefig(Path("src/graph.png"), format='png', bbox_inches='tight')
+        plt.close()  # Закрытие графика после сохранения
 
-    def plot_to_label(self, buf, width=600, height=400):
-        pixmap = QPixmap()
-        pixmap.loadFromData(buf.getvalue())
+    def excel_graph(self):
+        data = {'t': self.t, 'x': self.x, 'v': self.v}
+        df = pd.DataFrame(data)
+        excel_filename = 'data.xlsx'
+        df.to_excel(excel_filename, index=False)
+        os.startfile(excel_filename)
+
+    def plot_to_label(self, width=600, height=400):
+        pixmap = QPixmap(Path("src/graph.png"))
         scaled_pixmap = pixmap.scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         return scaled_pixmap
 
     def check(self):
         flag = False
         styleSheet = "color: red"
+        temp = []
         for line in self.input_fields:
             line_text = line.text()
+            temp.append(line.text())
             if line_text == "":
                 line.setText("null")
                 line.setStyleSheet(styleSheet)
                 flag = True
             else:
-                try:
-                    if int(line_text) < 0:
-                        line.setStyleSheet(styleSheet)
-                        flag = True
+                try:  # Только числа
+                    _ = float(line_text)
                 except ValueError:
                     line.setStyleSheet(styleSheet)
                     flag = True
+
+        # Проверка корректности значений
+        try:  # Верный промежуток времени
+            if float(temp[0]) >= float(temp[1]) or float(temp[0]) + float(temp[10]) >= float(temp[1]):
+                flag = True
+                self.input_fields[0].setStyleSheet(styleSheet)
+                self.input_fields[1].setStyleSheet(styleSheet)
+        except ValueError:
+            flag = True
+            self.input_fields[0].setStyleSheet(styleSheet)
+            self.input_fields[1].setStyleSheet(styleSheet)
+        try:  # Корректный период расчета и параметр дискретизации
+            if float(temp[9]) <= 0 or float(temp[10]) <= 0:
+                flag = True
+                self.input_fields[9].setStyleSheet(styleSheet)
+                self.input_fields[10].setStyleSheet(styleSheet)
+        except ValueError:
+            flag = True
+            self.input_fields[9].setStyleSheet(styleSheet)
+            self.input_fields[10].setStyleSheet(styleSheet)
+        try:  # Корректный коэффициент трения
+            if float(temp[4]) < 0:
+                flag = True
+                self.input_fields[4].setStyleSheet(styleSheet)
+        except ValueError:
+            flag = True
+            self.input_fields[4].setStyleSheet(styleSheet)
+        try:  # Корректная собственная частота колебаний осциллятора
+            if float(temp[5]) < 0:
+                flag = True
+                self.input_fields[5].setStyleSheet(styleSheet)
+        except ValueError:
+            flag = True
+            self.input_fields[5].setStyleSheet(styleSheet)
+        try:  # Корректная масса груза
+            if float(temp[6]) <= 0:
+                flag = True
+                self.input_fields[6].setStyleSheet(styleSheet)
+        except ValueError:
+            flag = True
+            self.input_fields[6].setStyleSheet(styleSheet)
+        try:  # Корректная собственная частота вынуждающей силы
+            if float(temp[8]) <= 0:
+                flag = True
+                self.input_fields[8].setStyleSheet(styleSheet)
+        except ValueError:
+            flag = True
+            self.input_fields[8].setStyleSheet(styleSheet)
+
         return not flag
 
     def reset(self, event=None):
