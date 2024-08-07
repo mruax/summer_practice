@@ -1,17 +1,15 @@
 import os
 import sys
-from io import BytesIO
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtGui import QPixmap, Qt
-import pandas as pd
 
 from ui import Ui_MainWindow
-import openpyxl
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -48,13 +46,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def create_plot(self):
         # Параметры
-        # omega0 = 1.0  # Собственная частота
-        # gamma = 0.1  # Коэффициент демпфирования
-        # A0 = 1.0  # Амплитуда внешней силы
-        # Omega = 1.0  # Частота внешней силы
-        # m = 1.0  # Масса
-        # dt = 0.01  # Шаг времени
-        # t_max = 10  # Общее время
         t0 = float(self.input_fields[0].text())      # Начальное время
         t1 = float(self.input_fields[1].text())      # Конечное время
         v0 = float(self.input_fields[2].text())      # Начальная скорость
@@ -72,6 +63,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Массив времени
         t = np.arange(t0, t1 + dt2, dt2)
+        if t[-1] > t1:  # Если с заданным шагом превышает конечное значение времени
+            t[-1] = t1
 
         # Инициализация массивов для скорости и положения
         v = np.zeros_like(t)
@@ -109,7 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def excel_graph(self):
         data = {'t': self.t, 'x': self.x, 'v': self.v}
         df = pd.DataFrame(data)
-        excel_filename = 'data.xlsx'
+        excel_filename = Path('src/data.xlsx')
         df.to_excel(excel_filename, index=False)
         os.startfile(excel_filename)
 
