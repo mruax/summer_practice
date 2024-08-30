@@ -10,6 +10,8 @@ import seaborn as sns
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtGui import QPixmap, Qt, QAction, QFont
 from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
+import openpyxl
+from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
 
 from ui import Ui_MainWindow
 
@@ -21,6 +23,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.x = []
         self.v = []
         self.t = []
+        self.e = []
+
+        self.energy_flag = False
+        self.points = 0
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -40,6 +46,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_graph.clicked.connect(self.print_graph)
         self.ui.pushButton_reset.clicked.connect(self.reset)
         self.ui.pushButton_print.clicked.connect(self.excel_graph)
+
+        self.ui.pushButton_print.setDisabled(True)
+        self.ui.pushButton_print.setStyleSheet("""
+            QPushButton:disabled {
+                background-color: #d3d3d3;
+                color: #808080;
+                border: 1px solid #a9a9a9;
+            }
+        """)
 
         menu_bar = self.menuBar()
         menu = menu_bar.addMenu("Дополнительно")
@@ -124,9 +139,9 @@ class MainWindow(QtWidgets.QMainWindow):
                        "где Ω – собственная частота вынуждающей силы; A0 – константа;\n"
                        "m – масса груза.\n"
                        "Корректность вводимых данных:\n"
-                       "t0 > t1; t0 + dt1 > t1\n"
+                       "t0 < t1; t0 + dt1 < t1\n"
                        "dt1 > 0; dt2 > 0; dt1 >= dt2\n"
-                       "γ >= 0; ω0 >= 0; m > 0; Ω > 0\n")
+                       "γ >= 0; ω0 >= 0; m >= 0; Ω >= 0\n")
         font1 = QFont()
         font1.setFamilies([u"Comic Sans MS"])
         font1.setPointSize(12)
@@ -157,10 +172,14 @@ class MainWindow(QtWidgets.QMainWindow):
         M = ceil(dt1 / dt2)
 
         index = 1
-        if A0 == 0:
+        if A0 == 0 or OMEGA == 0:
             OMEGA_period = 0
         else:
             OMEGA_period = 1 / OMEGA
+
+        energy_flag = True if gamma == 0 and A0 == 0 else False
+        e = list(False for _ in range(0, N * M + 2, 1))
+        self.energy_flag = energy_flag
 
         # Инициализация массивов для скорости и положения
         t = list(False for _ in range(0, N * M + 2, 1))
@@ -171,6 +190,10 @@ class MainWindow(QtWidgets.QMainWindow):
         t[0] = t0
         v[0] = v0
         x[0] = x0
+
+        if energy_flag:
+            e[0] = (m * v[0] ** 2 + m * omega0 ** 2 * x[0] ** 2) / 2
+            self.points = N
 
         # Итеративное вычисление t, v, x
         for i in range(1, N + 1):
@@ -190,6 +213,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 v[index] = v[index - 1] + (-omega0 ** 2 * x[index - 1] - gamma * v[index - 1] + driving_force) * dt2
                 x[index] = x[index - 1] + v[index] * dt2
 
+                if energy_flag:
+                    e[index] = (m * v[index] ** 2 + m * omega0 ** 2 * x[index] ** 2) / 2
+
                 if t[index] == t1:
                     break
                 index += 1
@@ -200,6 +226,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 del t[-1]
                 del v[-1]
                 del x[-1]
+                if energy_flag:
+                    del e[-1]
             t.append(t1)
             if A0 == 0:
                 driving_force = 0
@@ -207,15 +235,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 driving_force = A0 * np.cos(OMEGA * t[-1]) / m if abs(t[-1] / OMEGA_period - floor(t[-1] / OMEGA_period)) < dt2 else 0
             v.append(v[-1] + (-omega0 ** 2 * x[-1] - gamma * v[-1] + driving_force) * dt2)
             x.append(x[-1] + v[-1] * dt2)
+            if energy_flag:
+                e.append((m * v[-1] ** 2 + m * omega0 ** 2 * x[-1] ** 2) / 2)
         else:
             while t[-1] != t1:
                 del t[-1]
                 del v[-1]
                 del x[-1]
+                if energy_flag:
+                    del e[-1]
 
         self.x = np.asarray(x, dtype=np.float32)
         self.v = np.asarray(v, dtype=np.float32)
         self.t = np.asarray(t, dtype=np.float32)
+        if energy_flag:
+            self.e = np.asarray(e, dtype=np.float32)
 
         # Построение графика результатов
         sns.set(style="whitegrid")
@@ -233,11 +267,70 @@ class MainWindow(QtWidgets.QMainWindow):
         plt.savefig(Path("src/graph.png"), format='png', bbox_inches='tight')
         plt.close()  # Закрытие графика после сохранения
 
+        self.ui.pushButton_print.setStyleSheet("")
+        self.ui.pushButton_print.setEnabled(True)
+
     def excel_graph(self):
-        data = {'t': self.t, 'x': self.x, 'v': self.v}
-        df = pd.DataFrame(data)
         excel_filename = Path('src/data.xlsx')
+        if self.energy_flag:
+            data = {'t': self.t, 'x': self.x, 'v': self.v, "Полная энергия замкнутой системы": self.e}
+        else:
+            data = {'t': self.t, 'x': self.x, 'v': self.v}
+        df = pd.DataFrame(data)
         df.to_excel(excel_filename, index=False)
+
+        if self.energy_flag:
+            wb = openpyxl.load_workbook(excel_filename)
+            ws = wb.active
+            last_row = ws.max_row
+
+            ws[f'E1'] = "Средняя составляющая энергии"
+            ws[f'E2'] = f"=AVERAGE(D2:D{last_row})"
+
+            ws[f'F1'] = "Относительная погрешность"  # не Среднеквадратичная
+            for row in range(2, last_row + 1):
+                ws[f'F{row}'] = f"=ABS($E$2 - $D{row}) / ABS($E$2)"
+
+            ws[f'G1'] = "Количество рассчетных точек"
+            ws[f'G2'] = self.points
+
+            ws[f'H1'] = "Среднеквадратичная относительная погрешность"
+            ws[f'H2'] = f"=SQRT(1 / $G$2 * SUMPRODUCT(($F$2:$F${last_row})^2))"
+
+            # Оформление таблицы
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = max_length + 4
+                ws.column_dimensions[column].width = adjusted_width
+            thin_border = Border(
+                left=Side(style='thin'),
+                right=Side(style='thin'),
+                top=Side(style='thin'),
+                bottom=Side(style='thin')
+            )
+            fill1 = PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
+            fill2 = PatternFill(start_color='E4E4E4', end_color='E4E4E4', fill_type='solid')
+            first_row_flag = True
+            for row in ws.iter_rows():
+                for cell in row:
+                    if first_row_flag:
+                        cell.alignment = Alignment(horizontal='center', vertical='center')
+                        cell.font = Font(bold=True)
+                        cell.fill = fill1
+                    else:
+                        cell.fill = fill2
+                    cell.border = thin_border
+                if first_row_flag:
+                    first_row_flag = False
+
+            wb.save(excel_filename)
         os.startfile(excel_filename)
 
     def plot_to_label(self, width=600, height=400):
@@ -301,14 +394,14 @@ class MainWindow(QtWidgets.QMainWindow):
             flag = True
             self.input_fields[5].setStyleSheet(styleSheet)
         try:  # Корректная масса груза
-            if float(temp[6]) <= 0:
+            if float(temp[6]) < 0:
                 flag = True
                 self.input_fields[6].setStyleSheet(styleSheet)
         except ValueError:
             flag = True
             self.input_fields[6].setStyleSheet(styleSheet)
         try:  # Корректная собственная частота вынуждающей силы
-            if float(temp[8]) <= 0:
+            if float(temp[8]) < 0:
                 flag = True
                 self.input_fields[8].setStyleSheet(styleSheet)
         except ValueError:
@@ -321,6 +414,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.reset_text()
         self.reset_colour()
         self.ui.label_graph.setPixmap(QPixmap())
+
+        self.ui.pushButton_print.setDisabled(True)
+        self.ui.pushButton_print.setStyleSheet("""
+                    QPushButton:disabled {
+                        background-color: #d3d3d3;
+                        color: #808080;
+                        border: 1px solid #a9a9a9;
+                    }
+                """)
 
     def reset_text(self):
         for line in self.input_fields:
