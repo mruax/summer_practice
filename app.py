@@ -5,12 +5,12 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import openpyxl
 import pandas as pd
 import seaborn as sns
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtGui import QPixmap, Qt, QAction, QFont
-from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QFileDialog
-import openpyxl
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFileDialog
 from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
 
 from ui import Ui_MainWindow
