@@ -1,7 +1,7 @@
 # summer_practice
 This is summer practice project!
 
-![Logo](/src/Example1.png)
+![Logo](/examples/Example1.png)
 
 ## TODO
 

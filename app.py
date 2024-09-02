@@ -9,7 +9,7 @@ import pandas as pd
 import seaborn as sns
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtGui import QPixmap, Qt, QAction, QFont
-from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
+from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QFileDialog
 import openpyxl
 from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
 
@@ -46,26 +46,42 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pushButton_graph.clicked.connect(self.print_graph)
         self.ui.pushButton_reset.clicked.connect(self.reset)
         self.ui.pushButton_print.clicked.connect(self.excel_graph)
+        self.ui.pushButton_fileData.clicked.connect(self.file_data)
 
-        self.ui.pushButton_print.setDisabled(True)
-        self.ui.pushButton_print.setStyleSheet("""
+        self.qpushbutton_disabled_style = """
             QPushButton:disabled {
                 background-color: #d3d3d3;
                 color: #808080;
                 border: 1px solid #a9a9a9;
             }
-        """)
+        """
+
+        self.current_graph = False
+        self.ui.pushButton_left_arrow.setDisabled(True)
+        self.ui.pushButton_left_arrow.setStyleSheet(self.qpushbutton_disabled_style)
+        self.ui.pushButton_right_arrow.setDisabled(True)
+        self.ui.pushButton_right_arrow.setStyleSheet(self.qpushbutton_disabled_style)
+
+        self.ui.pushButton_left_arrow.clicked.connect(self.prev_graph)
+        self.ui.pushButton_right_arrow.clicked.connect(self.next_graph)
+
+        self.ui.pushButton_print.setDisabled(True)
+        self.ui.pushButton_print.setStyleSheet(self.qpushbutton_disabled_style)
 
         menu_bar = self.menuBar()
         menu = menu_bar.addMenu("Дополнительно")
 
-        open_action = QAction("Помощь", self)
-        open_action.triggered.connect(self.help_window)
-        menu.addAction(open_action)
+        open_action1 = QAction("Ввод данных", self)
+        open_action1.triggered.connect(self.input_data_window)
+        menu.addAction(open_action1)
 
-        open_action2 = QAction("О программе", self)
-        open_action2.triggered.connect(self.info_window)
+        open_action2 = QAction("Помощь", self)
+        open_action2.triggered.connect(self.help_window)
         menu.addAction(open_action2)
+
+        open_action3 = QAction("О программе", self)
+        open_action3.triggered.connect(self.info_window)
+        menu.addAction(open_action3)
 
     def print_graph(self, event=None):
         if self.check():
@@ -74,6 +90,47 @@ class MainWindow(QtWidgets.QMainWindow):
             self.create_plot()
             pixmap = self.plot_to_label(width=800, height=600)
             self.ui.label_graph.setPixmap(pixmap)
+
+    def input_data_window(self):
+        self.new_window4 = QWidget()
+        self.new_window4.setGeometry(360, 220, 200, 200)
+        self.new_window4.setFixedSize(475, 400)
+        self.new_window4.setWindowTitle("Ввод данных")
+
+        self.new_window4.setWindowIcon(self.icon)
+
+        layout = QVBoxLayout()
+
+        label_2 = QLabel("Ввод данных")
+        font = QFont()
+        font.setFamilies([u"Comic Sans MS"])
+        font.setPointSize(16)
+        label_2.setFont(font)
+        label_2.setAlignment(Qt.AlignCenter)
+
+        label = QLabel("Для ввода данных из файла можно использовать\n"
+                       "один из форматов:\n"
+                       "txt, csv, xlsx\n"
+                       "Пример входных данных для .txt (через ;):\n"
+                       "t0;t1;v0;x0;gamma;w0;m;A0;OMEGA;dt1;dt2\n"
+                       "0;20;5;-5;1;1;1;1;1;0.5;0.25\n"
+                       "Пример для .csv (через ;):\n"
+                       "t0;t1;v0;x0;gamma;w0;m;A0;OMEGA;dt1;dt2\n"
+                       "0;10;1;1;1;1;1;1;1;0.5;0.25\n"
+                       "Пример для .xlsx (через табуляцию):\n"
+                       "t0 t1 v0 x0 gamma w0 m A0 OMEGA dt1 dt2\n"
+                       "0 25 -3 10 1 1 4 1,2 1 0,5 0,25")
+        font1 = QFont()
+        font1.setFamilies([u"Comic Sans MS"])
+        font1.setPointSize(14)
+        label.setFont(font1)
+        label.setAlignment(Qt.AlignLeft)
+
+        layout.addWidget(label_2)
+        layout.addWidget(label)
+        self.new_window4.setLayout(layout)
+
+        self.new_window4.show()
 
     def info_window(self, event=None):
         self.new_window2 = QWidget()
@@ -255,24 +312,44 @@ class MainWindow(QtWidgets.QMainWindow):
         if energy_flag:
             self.e = np.asarray(e, dtype=np.float32)
 
-        # Построение графика результатов
+        # Построение графиков результатов
         sns.set(style="whitegrid")
         plt.figure(figsize=(14, 7))
-
         plt.plot(t, x, label='Положение $x(t)$')
         plt.plot(t, v, label='Скорость $v(t)$')
-
         plt.title('Затухающий гармонический осциллятор с внешней силой')
         plt.xlabel('Время $t$')
         plt.ylabel('Положение $x(t)$ и Скорость $v(t)$')
         plt.legend()
+        plt.savefig(Path("src/graph1.png"), format='png', bbox_inches='tight')
+        plt.close()
 
-        # Сохранение графика в файл
-        plt.savefig(Path("src/graph.png"), format='png', bbox_inches='tight')
-        plt.close()  # Закрытие графика после сохранения
+        sns.set(style="whitegrid")
+        plt.figure(figsize=(14, 7))
+        plt.plot(t, x, label='Положение $x(t)$')
+        plt.title('Затухающий гармонический осциллятор с внешней силой')
+        plt.xlabel('Время $t$')
+        plt.ylabel('Положение $x(t)$')
+        plt.legend()
+        plt.savefig(Path("src/graph2.png"), format='png', bbox_inches='tight')
+        plt.close()
+
+        sns.set(style="whitegrid")
+        plt.figure(figsize=(14, 7))
+        plt.plot(t, v, label='Скорость $v(t)$')
+        plt.title('Затухающий гармонический осциллятор с внешней силой')
+        plt.xlabel('Время $t$')
+        plt.ylabel('Скорость $v(t)$')
+        plt.legend()
+        plt.savefig(Path("src/graph3.png"), format='png', bbox_inches='tight')
+        plt.close()
 
         self.ui.pushButton_print.setStyleSheet("")
         self.ui.pushButton_print.setEnabled(True)
+
+        self.current_graph = 1
+        self.ui.pushButton_right_arrow.setStyleSheet("")
+        self.ui.pushButton_right_arrow.setEnabled(True)
 
     def excel_graph(self):
         excel_filename = Path('src/data.xlsx')
@@ -291,7 +368,7 @@ class MainWindow(QtWidgets.QMainWindow):
             ws[f'E1'] = "Средняя составляющая энергии"
             ws[f'E2'] = f"=AVERAGE(D2:D{last_row})"
 
-            ws[f'F1'] = "Относительная погрешность"  # не Среднеквадратичная
+            ws[f'F1'] = "Относительная погрешность"
             for row in range(2, last_row + 1):
                 ws[f'F{row}'] = f"=ABS($E$2 - $D{row}) / ABS($E$2)"
 
@@ -335,10 +412,76 @@ class MainWindow(QtWidgets.QMainWindow):
                     first_row_flag = False
 
             wb.save(excel_filename)
+            wb.close()
         os.startfile(excel_filename)
 
+    def file_data(self):
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open File",
+            "",
+            "CSV Files (*.csv);;Text Files (*.txt);;Excel Files (*.xlsx)"
+        )
+
+        if file_name:
+            file_path = Path(file_name)
+            file_extension = os.path.splitext(file_name)[1]
+            if file_extension == ".csv" or file_extension == ".txt":
+                with open(file_path, "r") as file:
+                    file.readline()
+                    line_input = file.readline().split(";")
+                    for id, line in enumerate(self.input_fields):
+                        try:
+                            line.setText(line_input[id])
+                        except Exception:
+                            pass
+            elif file_extension == ".xlsx":
+                workbook = openpyxl.load_workbook(file_name)
+                sheet = workbook.active
+                data = []
+                for row in sheet.iter_rows(values_only=True):
+                    data.append(list(row))
+                for id, line in enumerate(self.input_fields):
+                    try:
+                        line.setText(str(data[1][id]))
+                    except Exception:
+                        pass
+                workbook.close()
+
+    def next_graph(self):
+        self.current_graph += 1
+        self.ui.pushButton_left_arrow.setStyleSheet("")
+        self.ui.pushButton_left_arrow.setEnabled(True)
+
+        if self.current_graph == 2:
+            self.ui.pushButton_right_arrow.setStyleSheet("")
+            self.ui.pushButton_right_arrow.setEnabled(True)
+        else:
+            self.ui.pushButton_right_arrow.setDisabled(True)
+            self.ui.pushButton_right_arrow.setStyleSheet(self.qpushbutton_disabled_style)
+
+        self.ui.label_graph.setPixmap(QPixmap())
+        pixmap = self.plot_to_label(width=800, height=600)
+        self.ui.label_graph.setPixmap(pixmap)
+
+    def prev_graph(self):
+        self.current_graph -= 1
+        self.ui.pushButton_right_arrow.setStyleSheet("")
+        self.ui.pushButton_right_arrow.setEnabled(True)
+
+        if self.current_graph == 2:
+            self.ui.pushButton_left_arrow.setStyleSheet("")
+            self.ui.pushButton_left_arrow.setEnabled(True)
+        else:
+            self.ui.pushButton_left_arrow.setDisabled(True)
+            self.ui.pushButton_left_arrow.setStyleSheet(self.qpushbutton_disabled_style)
+
+        self.ui.label_graph.setPixmap(QPixmap())
+        pixmap = self.plot_to_label(width=800, height=600)
+        self.ui.label_graph.setPixmap(pixmap)
+
     def plot_to_label(self, width=600, height=400):
-        pixmap = QPixmap(Path("src/graph.png"))
+        pixmap = QPixmap(Path(f"src/graph{self.current_graph}.png"))
         scaled_pixmap = pixmap.scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         return scaled_pixmap
 
@@ -420,13 +563,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.label_graph.setPixmap(QPixmap())
 
         self.ui.pushButton_print.setDisabled(True)
-        self.ui.pushButton_print.setStyleSheet("""
-                    QPushButton:disabled {
-                        background-color: #d3d3d3;
-                        color: #808080;
-                        border: 1px solid #a9a9a9;
-                    }
-                """)
+        self.ui.pushButton_print.setStyleSheet(self.qpushbutton_disabled_style)
+
+        self.current_graph = False
+        self.ui.pushButton_left_arrow.setDisabled(True)
+        self.ui.pushButton_left_arrow.setStyleSheet(self.qpushbutton_disabled_style)
+        self.ui.pushButton_right_arrow.setDisabled(True)
+        self.ui.pushButton_right_arrow.setStyleSheet(self.qpushbutton_disabled_style)
 
     def reset_text(self):
         for line in self.input_fields:
