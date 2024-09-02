@@ -395,7 +395,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             ws[f'F1'] = "Относительная погрешность"
             for row in range(2, last_row + 1):
-                if (row - 1) % self.M - 1 == 0:
+                if (row - 2) % self.M == 0:
                     ws[f'F{row}'] = f"=ABS($E$2 - $D{row}) / ABS($E$2)"
 
             ws[f'G1'] = "Количество рассчетных точек"
