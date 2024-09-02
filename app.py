@@ -1,6 +1,6 @@
 import os
 import sys
-from math import ceil, floor
+from math import ceil, floor, isclose
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -276,14 +276,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     driving_force = 0
                 else:
                     driving_force = A0 * np.cos(OMEGA * t[index]) / m if abs(t[index] / OMEGA_period - floor(t[index] / OMEGA_period)) < dt2 else 0
-
                 v[index] = v[index - 1] + (-omega0 ** 2 * x[index - 1] - gamma * v[index - 1] + driving_force) * dt2
                 x[index] = x[index - 1] + v[index] * dt2
 
                 if energy_flag:
-                    if t[index] == t0 + dt1 * i:
+                    if isclose(t[index], t0 + dt1 * i, rel_tol=1e-05):
                         e[index] = (m * v[index] ** 2 + m * omega0 ** 2 * x[index] ** 2) / 2
-
                 if t[index] == t1:
                     break
                 index += 1
