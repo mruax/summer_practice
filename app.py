@@ -25,6 +25,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.t = []
         self.e = []
 
+        self.N = 0
+        self.M = 0
+
         self.energy_flag = False
         self.points = 0
 
@@ -94,7 +97,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def input_data_window(self):
         self.new_window4 = QWidget()
         self.new_window4.setGeometry(360, 220, 200, 200)
-        self.new_window4.setFixedSize(475, 400)
+        self.new_window4.setFixedSize(480, 400)
         self.new_window4.setWindowTitle("Ввод данных")
 
         self.new_window4.setWindowIcon(self.icon)
@@ -232,13 +235,16 @@ class MainWindow(QtWidgets.QMainWindow):
         N = ceil((t1 - t0) / dt1)
         M = ceil(dt1 / dt2)
 
+        self.N = N
+        self.M = M
+
         index = 1
         if A0 == 0 or OMEGA == 0:
             OMEGA_period = 0
         else:
             OMEGA_period = 1 / OMEGA
 
-        energy_flag = True if gamma == 0 and A0 == 0 else False
+        energy_flag = True if gamma == 0 and (A0 == 0 or OMEGA == 0) else False
         e = list(False for _ in range(0, N * M + 2, 1))
         self.energy_flag = energy_flag
 
@@ -266,7 +272,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if t[index] > t1:
                     t[index] = t1
 
-                if A0 == 0:
+                if A0 == 0 or OMEGA == 0:
                     driving_force = 0
                 else:
                     driving_force = A0 * np.cos(OMEGA * t[index]) / m if abs(t[index] / OMEGA_period - floor(t[index] / OMEGA_period)) < dt2 else 0
@@ -275,7 +281,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 x[index] = x[index - 1] + v[index] * dt2
 
                 if energy_flag:
-                    e[index] = (m * v[index] ** 2 + m * omega0 ** 2 * x[index] ** 2) / 2
+                    if t[index] == t0 + dt1 * i:
+                        e[index] = (m * v[index] ** 2 + m * omega0 ** 2 * x[index] ** 2) / 2
 
                 if t[index] == t1:
                     break
@@ -283,14 +290,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Вычисление пограничного финального значения времени (при необходимости)
         if t1 not in t:
-            while t[-1] == 0:
+            while t[-1] is False:
                 del t[-1]
                 del v[-1]
                 del x[-1]
                 if energy_flag:
                     del e[-1]
             t.append(t1)
-            if A0 == 0:
+            if A0 == 0 or OMEGA == 0:
                 driving_force = 0
             else:
                 driving_force = A0 * np.cos(OMEGA * t[-1]) / m if abs(t[-1] / OMEGA_period - floor(t[-1] / OMEGA_period)) < dt2 else 0
@@ -299,24 +306,40 @@ class MainWindow(QtWidgets.QMainWindow):
             if energy_flag:
                 e.append((m * v[-1] ** 2 + m * omega0 ** 2 * x[-1] ** 2) / 2)
         else:
-            while t[-1] != t1:
-                del t[-1]
-                del v[-1]
-                del x[-1]
-                if energy_flag:
-                    del e[-1]
+            count = t.count(t1)
+            if count == 1:
+                while t[-1] != t1:
+                    del t[-1]
+                    del v[-1]
+                    del x[-1]
+                    if energy_flag:
+                        del e[-1]
+            else:
+                flag = True
+                while flag:
+                    if t[-1] == t1:
+                        count -= 1
+
+                    del t[-1]
+                    del v[-1]
+                    del x[-1]
+                    if energy_flag:
+                        del e[-1]
+
+                    if count == 1:
+                        flag = False
 
         self.x = np.asarray(x, dtype=np.float32)
         self.v = np.asarray(v, dtype=np.float32)
         self.t = np.asarray(t, dtype=np.float32)
         if energy_flag:
-            self.e = np.asarray(e, dtype=np.float32)
+            self.e = np.asarray([data if data else -1 for data in e], dtype=np.float32)
 
         # Построение графиков результатов
         sns.set(style="whitegrid")
         plt.figure(figsize=(14, 7))
         plt.plot(t, x, label='Положение $x(t)$')
-        plt.plot(t, v, label='Скорость $v(t)$')
+        plt.plot(t, v, label='Скорость $v(t)$', color='orange')
         plt.title('Затухающий гармонический осциллятор с внешней силой')
         plt.xlabel('Время $t$')
         plt.ylabel('Положение $x(t)$ и Скорость $v(t)$')
@@ -336,7 +359,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         sns.set(style="whitegrid")
         plt.figure(figsize=(14, 7))
-        plt.plot(t, v, label='Скорость $v(t)$')
+        plt.plot(t, v, label='Скорость $v(t)$', color='orange')
         plt.title('Затухающий гармонический осциллятор с внешней силой')
         plt.xlabel('Время $t$')
         plt.ylabel('Скорость $v(t)$')
@@ -365,12 +388,17 @@ class MainWindow(QtWidgets.QMainWindow):
             ws = wb.active
             last_row = ws.max_row
 
+            for cell in range(2, last_row + 1):
+                if (cell - 2) % self.M != 0:
+                    ws[f"D{cell}"].value = ""
+
             ws[f'E1'] = "Средняя составляющая энергии"
             ws[f'E2'] = f"=AVERAGE(D2:D{last_row})"
 
             ws[f'F1'] = "Относительная погрешность"
             for row in range(2, last_row + 1):
-                ws[f'F{row}'] = f"=ABS($E$2 - $D{row}) / ABS($E$2)"
+                if (row - 1) % self.M - 1 == 0:
+                    ws[f'F{row}'] = f"=ABS($E$2 - $D{row}) / ABS($E$2)"
 
             ws[f'G1'] = "Количество рассчетных точек"
             ws[f'G2'] = self.points
