@@ -102,10 +102,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.reset_colour()
 
             self.create_plot()
-            pixmap = self.plot_to_label()  # width=800, height=600
+            pixmap = self.plot_to_label()
             self.ui.label_graph.setPixmap(pixmap)
 
-    def input_data_window(self):
+    def input_data_window(self, event=None):
         self.new_window4 = QWidget()
         self.new_window4.setGeometry(360, 220, 200, 200)
         self.new_window4.setFixedSize(480, 400)
@@ -215,7 +215,7 @@ class MainWindow(QtWidgets.QMainWindow):
                        "γ >= 0; ω0 >= 0; m >= 0; Ω >= 0\n"
                        "Полная энергия системы считается при нулевых внешних силах:\n"
                        "A0 = 0; Ω = 0; γ = 0\n"
-                       "Результаты измерений вносятся в таблицу excel.\n")
+                       "Результаты измерений вносятся в таблицу excel.")
         font1 = QFont()
         font1.setFamilies([u"Comic Sans MS"])
         font1.setPointSize(12)
@@ -497,7 +497,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_right_arrow.setStyleSheet(self.qpushbutton_disabled_style)
 
         self.ui.label_graph.setPixmap(QPixmap())
-        pixmap = self.plot_to_label()  # width=800, height=600
+        pixmap = self.plot_to_label()
         self.ui.label_graph.setPixmap(pixmap)
 
     def prev_graph(self):
@@ -513,10 +513,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_left_arrow.setStyleSheet(self.qpushbutton_disabled_style)
 
         self.ui.label_graph.setPixmap(QPixmap())
-        pixmap = self.plot_to_label()  # width=800, height=600
+        pixmap = self.plot_to_label()
         self.ui.label_graph.setPixmap(pixmap)
 
-    def plot_to_label(self, width=600, height=400):
+    def plot_to_label(self):
         pixmap = QPixmap(Path(f"src/graph{self.current_graph}.png"))
         graph_size = self.ui.label_graph.size()
         scaled_pixmap = pixmap.scaled(graph_size.width(), graph_size.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
