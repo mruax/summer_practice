@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtGui import QPixmap, Qt, QAction, QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFileDialog, QMessageBox
 from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
 
 from ui import Ui_MainWindow
@@ -101,9 +101,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.check():
             self.reset_colour()
 
-            self.create_plot()
-            pixmap = self.plot_to_label()
-            self.ui.label_graph.setPixmap(pixmap)
+            try:
+                self.create_plot()
+                pixmap = self.plot_to_label()
+                self.ui.label_graph.setPixmap(pixmap)
+            except Exception as e:
+                self.show_error_message(e)
 
     def input_data_window(self, event=None):
         self.new_window4 = QWidget()
@@ -337,9 +340,15 @@ class MainWindow(QtWidgets.QMainWindow):
                     if count == 1:
                         flag = False
 
-        self.x = np.asarray(x, dtype=np.float32)
-        self.v = np.asarray(v, dtype=np.float32)
-        self.t = np.asarray(t, dtype=np.float32)
+        try:
+            self.x = np.asarray(x, dtype=np.float32)
+            self.v = np.asarray(v, dtype=np.float32)
+            self.t = np.asarray(t, dtype=np.float32)
+            if any(np.isinf(self.x)) or any(np.isinf(self.v)):
+                raise Exception('Входные параметры приводят к слишком большим числам!')
+        except Exception as e:
+            self.show_error_message(e)
+            return
         if energy_flag:
             self.e = np.asarray([data if data else -1 for data in e], dtype=np.float32)
 
@@ -388,14 +397,17 @@ class MainWindow(QtWidgets.QMainWindow):
             data = {'t': self.t, 'x': self.x, 'v': self.v, "Полная энергия замкнутой системы": self.e}
         else:
             data = {'t': self.t, 'x': self.x, 'v': self.v}
-        df = pd.DataFrame(data)
-        df.to_excel(excel_filename, index=False)
+        try:
+            df = pd.DataFrame(data)
+            df.to_excel(excel_filename, index=False)
+        except Exception as e:
+            self.show_error_message(e)
+            return
 
-        if self.energy_flag:
-            wb = openpyxl.load_workbook(excel_filename)
-            ws = wb.active
-            last_row = ws.max_row
-
+        wb = openpyxl.load_workbook(excel_filename)
+        ws = wb.active
+        last_row = ws.max_row
+        if self.energy_flag:  # Расчет при замкнутости системы
             for cell in range(2, last_row + 1):
                 if (cell - 2) % self.M != 0:
                     ws[f"D{cell}"].value = ""
@@ -414,41 +426,41 @@ class MainWindow(QtWidgets.QMainWindow):
             ws[f'H1'] = "Среднеквадратичная относительная погрешность"
             ws[f'H2'] = f"=SQRT(1 / $G$2 * SUMPRODUCT(($F$2:$F${last_row})^2))"
 
-            # Оформление таблицы
-            for col in ws.columns:
-                max_length = 0
-                column = col[0].column_letter
-                for cell in col:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                adjusted_width = max_length + 4
-                ws.column_dimensions[column].width = adjusted_width
-            thin_border = Border(
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-                top=Side(style='thin'),
-                bottom=Side(style='thin')
-            )
-            fill1 = PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
-            fill2 = PatternFill(start_color='E4E4E4', end_color='E4E4E4', fill_type='solid')
-            first_row_flag = True
-            for row in ws.iter_rows():
-                for cell in row:
-                    if first_row_flag:
-                        cell.alignment = Alignment(horizontal='center', vertical='center')
-                        cell.font = Font(bold=True)
-                        cell.fill = fill1
-                    else:
-                        cell.fill = fill2
-                    cell.border = thin_border
+        # Оформление таблицы
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = max_length + 4
+            ws.column_dimensions[column].width = adjusted_width
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        fill1 = PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
+        fill2 = PatternFill(start_color='E4E4E4', end_color='E4E4E4', fill_type='solid')
+        first_row_flag = True
+        for row in ws.iter_rows():
+            for cell in row:
                 if first_row_flag:
-                    first_row_flag = False
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                    cell.font = Font(bold=True)
+                    cell.fill = fill1
+                else:
+                    cell.fill = fill2
+                cell.border = thin_border
+            if first_row_flag:
+                first_row_flag = False
 
-            wb.save(excel_filename)
-            wb.close()
+        wb.save(excel_filename)
+        wb.close()
         os.startfile(excel_filename)
 
     def file_data(self):
@@ -620,6 +632,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def reset_style(self, line):
         styleSheet = "color: black"
         line.setStyleSheet(styleSheet)
+
+    def show_error_message(self, error_text):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setWindowTitle("Ошибка")
+        msg_box.setText(str(error_text))
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec()
 
 
 if __name__ == "__main__":
