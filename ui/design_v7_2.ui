@@ -499,18 +499,6 @@
     </item>
     <item row="1" column="1">
      <layout class="QVBoxLayout" name="verticalLayout_graph">
-      <property name="leftMargin">
-       <number>5</number>
-      </property>
-      <property name="topMargin">
-       <number>5</number>
-      </property>
-      <property name="rightMargin">
-       <number>5</number>
-      </property>
-      <property name="bottomMargin">
-       <number>5</number>
-      </property>
       <item>
        <widget class="QLabel" name="label_graph">
         <property name="text">

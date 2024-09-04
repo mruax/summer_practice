@@ -86,12 +86,23 @@ class MainWindow(QtWidgets.QMainWindow):
         open_action3.triggered.connect(self.info_window)
         menu.addAction(open_action3)
 
+    def resizeEvent(self, event):
+        try:
+            self.pixmap = QPixmap(Path(f"src/graph{self.current_graph}.png"))
+            graph_size = self.ui.label_graph.size()
+            scaled_pixmap = self.pixmap.scaled(graph_size.width(), graph_size.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.ui.label_graph.setPixmap(scaled_pixmap)
+            self.ui.label_graph.setMinimumSize(1, 1)
+        except Exception:
+            pass
+        super().resizeEvent(event)
+
     def print_graph(self, event=None):
         if self.check():
             self.reset_colour()
 
             self.create_plot()
-            pixmap = self.plot_to_label(width=800, height=600)
+            pixmap = self.plot_to_label()  # width=800, height=600
             self.ui.label_graph.setPixmap(pixmap)
 
     def input_data_window(self):
@@ -204,8 +215,7 @@ class MainWindow(QtWidgets.QMainWindow):
                        "γ >= 0; ω0 >= 0; m >= 0; Ω >= 0\n"
                        "Полная энергия системы считается при нулевых внешних силах:\n"
                        "A0 = 0; Ω = 0; γ = 0\n"
-                       "Результаты измерений вносятся в таблицу excel.\n"
-                       "Импорт из текстового файла, где каж")
+                       "Результаты измерений вносятся в таблицу excel.\n")
         font1 = QFont()
         font1.setFamilies([u"Comic Sans MS"])
         font1.setPointSize(12)
@@ -487,7 +497,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_right_arrow.setStyleSheet(self.qpushbutton_disabled_style)
 
         self.ui.label_graph.setPixmap(QPixmap())
-        pixmap = self.plot_to_label(width=800, height=600)
+        pixmap = self.plot_to_label()  # width=800, height=600
         self.ui.label_graph.setPixmap(pixmap)
 
     def prev_graph(self):
@@ -503,12 +513,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.pushButton_left_arrow.setStyleSheet(self.qpushbutton_disabled_style)
 
         self.ui.label_graph.setPixmap(QPixmap())
-        pixmap = self.plot_to_label(width=800, height=600)
+        pixmap = self.plot_to_label()  # width=800, height=600
         self.ui.label_graph.setPixmap(pixmap)
 
     def plot_to_label(self, width=600, height=400):
         pixmap = QPixmap(Path(f"src/graph{self.current_graph}.png"))
-        scaled_pixmap = pixmap.scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        graph_size = self.ui.label_graph.size()
+        scaled_pixmap = pixmap.scaled(graph_size.width(), graph_size.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         return scaled_pixmap
 
     def check(self):
