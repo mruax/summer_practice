@@ -5,6 +5,8 @@ This is summer practice project!
 
 ![Logo](/examples/Example1.png)
 
+![Logo](/examples/Example2.png)
+
 ## TODO
 
 1. dt2 > 1.8

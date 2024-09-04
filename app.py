@@ -203,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
                        "t0,t1 – начальный и конечный момент времени расчетов (с);\n"
                        "v0 – начальная скорость (м/с);\n"
                        "x0 – начальное положение груза (м);\n"
-                       "γ – коэффициент трения (с^-1);\n"
+                       "γ – коэффициент трения;\n"
                        "ω0 – собственная частота колебаний осциллятора (рад/с);\n"
                        "dt1 – период расчетов или же интервал времени,\n"
                        "через который выдается текущее значение переменных (с);\n"
@@ -446,6 +446,7 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         fill1 = PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
         fill2 = PatternFill(start_color='E4E4E4', end_color='E4E4E4', fill_type='solid')
+        fill3 = PatternFill(start_color='C5C6D5', end_color='C5C6D5', fill_type='solid')
         first_row_flag = True
         for row in ws.iter_rows():
             for cell in row:
@@ -458,7 +459,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 cell.border = thin_border
             if first_row_flag:
                 first_row_flag = False
-
+        for row in range(2, last_row + 1):
+            if (row - 2) % self.M == 0:
+                ws[f'A{row}'].fill = fill3
+        if self.energy_flag:
+            ws[f'G2'].fill = fill3
         wb.save(excel_filename)
         wb.close()
         os.startfile(excel_filename)
